@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: event-booking-api
+    env: node
+    plan: free
+    buildCommand: npm install --include=dev && node -e "require('fs').copyFileSync('prisma/schema.postgres.prisma', 'prisma/schema.prisma')" && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npx tsx prisma/seed.ts && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: onboarding@resend.dev
+      - key: CONCURRENCY_MODE
+        value: optimized
+      - key: DATABASE_URL
+        fromDatabase:
+          name: event-booking-db
+          property: connectionString
+
+databases:
+  - name: event-booking-db
+    plan: free

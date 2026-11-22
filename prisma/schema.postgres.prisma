@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      String    @default("CUSTOMER") // "ORGANIZER" | "CUSTOMER"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  events    Event[]   @relation("OrganizerEvents")
+  bookings  Booking[] @relation("CustomerBookings")
+
+  @@index([email])
+  @@index([role])
+}
+
+model Event {
+  id               String    @id @default(uuid())
+  organizerId      String
+  title            String
+  description      String
+  location         String
+  eventDate        DateTime
+  totalTickets     Int
+  availableTickets Int
+  ticketPrice      Float     @default(0.0)
+  version          Int       @default(1)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organizer        User      @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Cascade)
+  bookings         Booking[]
+
+  @@index([organizerId])
+  @@index([eventDate])
+}
+
+model Booking {
+  id             String    @id @default(uuid())
+  eventId        String
+  customerId     String
+  ticketQuantity Int       @default(1)
+  totalPrice     Float     @default(0.0)
+  status         String    @default("CONFIRMED")
+  idempotencyKey String?   @unique
+  createdAt      DateTime  @default(now())
+
+  event          Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  customer       User      @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model NotificationLog {
+  id             String    @id @default(uuid())
+  type           String
+  recipientEmail String
+  subject        String
+  status         String    @default("SENT")
+  messageId      String?
+  error          String?
+  createdAt      DateTime  @default(now())
+
+  @@index([recipientEmail])
+  @@index([type])
+}
